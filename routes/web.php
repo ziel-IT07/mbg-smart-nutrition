@@ -8,3 +8,4 @@ Route::get('/', function () {
 });
 
 Route::resource('siswa', SiswaController::class);
+Route::get('/siswa/{siswa}/export-pdf', [App\Http\Controllers\SiswaController::class, 'exportPdf'])->name('siswa.pdf');
