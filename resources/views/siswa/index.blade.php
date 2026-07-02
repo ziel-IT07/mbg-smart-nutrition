@@ -40,14 +40,23 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Kelas</label>
                         <input type="text" name="kelas" class="form-control" placeholder="Contoh: 7-A atau 1" required>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Umur (Tahun)</label>
                         <input type="number" name="umur" class="form-control" placeholder="Contoh: 12" required>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Jenis Kelamin</label>
+                        <select name="jenis_kelamin" class="form-select" required>
+                            <option value="">-- Pilih Jenis Kelamin --</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
                     </div>
                 </div>
 
@@ -79,14 +88,13 @@
                         <th>Nama</th>
                         <th>Kelas</th>
                         <th>BMI Terkini</th>
-                        <th>Status Gizi</th>
-                        <th>Aksi</th>
+                        <th>Status Gizi (BMI)</th>
+                        <th>Indikator TB/U (Stunting)</th> <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($siswas as $siswa)
                         @php
-                            // Ambil data riwayat pemeriksaan paling terbaru
                             $terbaru = $siswa->riwayatGizi->first();
                         @endphp
                     <tr>
@@ -109,6 +117,19 @@
                                 <span class="badge bg-secondary">Belum ada data</span>
                             @endif
                         </td>
+                        
+                        <td>
+                            @if($terbaru)
+                                @if($terbaru->status_tbu == 'Stunted' || $terbaru->status_tbu == 'Severely Stunted')
+                                    <span class="badge bg-danger">⚠️ Terindikasi Stunting</span>
+                                @else
+                                    <span class="badge bg-success">✅ Normal</span>
+                                @endif
+                            @else
+                                <span class="badge bg-secondary">-</span>
+                            @endif
+                        </td>
+
                         <td>
                             <a href="{{ route('siswa.show', ['siswa' => $siswa->id]) }}" class="btn btn-sm btn-outline-primary">
                                 📊 Lihat Riwayat

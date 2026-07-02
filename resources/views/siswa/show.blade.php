@@ -46,7 +46,7 @@
         <div class="card-body bg-white">
             <div id="ai-response" class="p-2" style="line-height: 1.7; font-size: 15px; color: #2b2b2b;">
                 <div class="d-flex align-items-center text-muted">
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>   
                     Menghubungi Google Gemini AI untuk merangkai menu gizi...
                 </div>
             </div>
