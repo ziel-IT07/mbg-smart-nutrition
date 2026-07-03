@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Riwayat Perkembangan Gizi - {{ $siswa->nama }}</title>
+    <title>Riwayat Perkembangan Gizi - {{ $siswa->name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -23,9 +23,9 @@
         <div class="card-header bg-dark text-white fw-bold">Profil Siswa</div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-4"><strong>Nama:</strong> {{ $siswa->nama }}</div>
+                <div class="col-md-4"><strong>Nama:</strong> {{ $siswa->name }}</div>
                 <div class="col-md-4"><strong>NISN:</strong> {{ $siswa->nisn }}</div>
-                <div class="col-md-4"><strong>Kelas:</strong> {{ $siswa->kelas }}</div>
+                <div class="col-md-4"><strong>Kelas:</strong> {{ $siswa->class_name }}</div>
             </div>
         </div>
     </div>
@@ -60,30 +60,36 @@
                 <thead class="table-light">
                     <tr>
                         <th>Tanggal Periksa</th>
-                        <th>Umur</th>
+                        <th>Umur (Bulan)</th>
                         <th>Tinggi Badan</th>
                         <th>Berat Badan</th>
                         <th>BMI</th>
                         <th>Status Gizi</th>
+                        <th>Status Stunting</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($siswa->riwayatGizi as $riwayat)
+                    @foreach($siswa->riwayatAntropometri as $riwayat)
                     <tr>
                         <td>{{ $riwayat->created_at->format('d M Y - H:i') }}</td>
-                        <td>{{ $riwayat->umur }} Tahun</td>
-                        <td>{{ $riwayat->tinggi }} cm</td>
-                        <td>{{ $riwayat->berat }} kg</td>
-                        <td class="fw-bold">{{ $riwayat->bmi }}</td>
+                        <td>{{ $riwayat->age_in_months }} Bulan</td>
+                        <td>{{ $riwayat->height_cm }} cm</td>
+                        <td>{{ $riwayat->weight_kg }} kg</td>
+                        <td class="fw-bold">{{ $riwayat->bmi_value }}</td>
                         <td>
-                            @if($riwayat->status_gizi == 'Kurus')
-                                <span class="badge bg-warning text-dark">Kurus</span>
-                            @elseif($riwayat->status_gizi == 'Normal')
-                                <span class="badge bg-success">Normal</span>
-                            @elseif($riwayat->status_gizi == 'Gemuk')
-                                <span class="badge bg-info text-dark">Gemuk</span>
+                            @if(str_contains($riwayat->gizi_status_conclusion, 'Kurang'))
+                                <span class="badge bg-warning text-dark">{{ $riwayat->gizi_status_conclusion }}</span>
+                            @elseif(str_contains($riwayat->gizi_status_conclusion, 'Normal'))
+                                <span class="badge bg-success">{{ $riwayat->gizi_status_conclusion }}</span>
                             @else
-                                <span class="badge bg-danger">Obesitas</span>
+                                <span class="badge bg-danger">{{ $riwayat->gizi_status_conclusion }}</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($riwayat->stunting_status_conclusion == 'Stunted' || $riwayat->stunting_status_conclusion == 'Severely Stunted' || $riwayat->stunting_status_conclusion == 'Pendek')
+                                <span class="badge bg-danger">⚠️ {{ $riwayat->stunting_status_conclusion }}</span>
+                            @else
+                                <span class="badge bg-success">✅ {{ $riwayat->stunting_status_conclusion }}</span>
                             @endif
                         </td>
                     </tr>
@@ -97,14 +103,14 @@
 <script>
     // Menyiapkan data dari database Laravel ke JavaScript
     const labelsTanggal = [
-        @foreach($siswa->riwayatGizi as $riwayat)
+        @foreach($siswa->riwayatAntropometri as $riwayat)
             "{{ $riwayat->created_at->format('d M Y') }}",
         @endforeach
     ];
 
     const dataBMI = [
-        @foreach($siswa->riwayatGizi as $riwayat)
-            {{ $riwayat->bmi }},
+        @foreach($siswa->riwayatAntropometri as $riwayat)
+            {{ $riwayat->bmi_value }},
         @endforeach
     ];
 
@@ -148,30 +154,29 @@
         }
     });
 
-    // OPSI BARU: Mengirim request ke Gemini API langsung melalui Sisi Browser Laptop (JavaScript)
+    // Mengirim request ke Gemini API langsung melalui Sisi Browser Laptop (JavaScript)
     document.addEventListener("DOMContentLoaded", async function() {
         const aiResponseDiv = document.getElementById('ai-response');
         
-        // 1. SILAKAN MASUKKAN KUNCI API TERBARU KAMU DI SINI
         const apiKey = "AQ.Ab8RN6IEdry7utr36MS-b6vlTe6rGwyC_2GFwHkitrTSQHpUgA"; 
         
-        // 2. Mengumpulkan parameter kondisi gizi siswa dari data Laravel secara aman
-        const namaSiswa = "{{ $siswa->nama }}";
-        const umurSiswa = "{{ $siswa->riwayatGizi->last()->umur ?? 0 }}";
-        const tinggiSiswa = "{{ $siswa->riwayatGizi->last()->tinggi ?? 0 }}";
-        const beratSiswa = "{{ $siswa->riwayatGizi->last()->berat ?? 0 }}";
-        const statusGizi = "{{ $siswa->riwayatGizi->last()->status_gizi ?? 'Normal' }}";
+        // Mengumpulkan parameter kondisi gizi siswa dari data relasi baru secara aman
+        const namaSiswa = "{{ $siswa->name }}";
+        const umurSiswa = "{{ $siswa->riwayatAntropometri->last()->age_in_months ?? 0 }}";
+        const tinggiSiswa = "{{ $siswa->riwayatAntropometri->last()->height_cm ?? 0 }}";
+        const beratSiswa = "{{ $siswa->riwayatAntropometri->last()->weight_kg ?? 0 }}";
+        const statusGizi = "{{ $siswa->riwayatAntropometri->last()->gizi_status_conclusion ?? 'Normal' }}";
+        const statusStunting = "{{ $siswa->riwayatAntropometri->last()->stunting_status_conclusion ?? 'Normal' }}";
 
         if(umurSiswa == 0) {
             aiResponseDiv.innerHTML = "<span class='text-muted'>Data pemeriksaan gizi belum tersedia.</span>";
             return;
         }
 
-        // 3. Susun instruksi prompt ahli gizi
-        const promptText = `Kamu adalah ahli gizi anak profesional dari Kementerian Kesehatan RI. Berikan rekomendasi menu makanan harian lokal Indonesia selama 1 minggu untuk anak bernama ${namaSiswa} berumur ${umurSiswa} tahun, dengan Tinggi ${tinggiSiswa} cm, Berat ${beratSiswa} kg, dan berstatus Gizi '${statusGizi}'. Format respons harus langsung ke poin menu per hari, ramah, edukatif, ringkas, dan gunakan format teks Markdown.`;
+        // Susun instruksi prompt ahli gizi terintegrasi status stunting core engine
+        const promptText = `Kamu adalah ahli gizi anak profesional dari Kementerian Kesehatan RI. Berikan rekomendasi menu makanan harian lokal Indonesia selama 1 minggu untuk anak bernama ${namaSiswa} berumur ${umurSiswa} bulan, dengan Tinggi ${tinggiSiswa} cm, Berat ${beratSiswa} kg, berstatus Gizi '${statusGizi}', dan berstatus Stunting '${statusStunting}'. Format respons harus langsung ke poin menu per hari, ramah, edukatif, ringkas, dan gunakan format teks Markdown.`;
 
         try {
-            // 4. Lakukan pemanggilan Fetch langsung ke server Google
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                 method: "POST",
                 headers: {
@@ -187,12 +192,10 @@
             const result = await response.json();
 
             if (response.ok) {
-                // 5. Sukses! Parsing Markdown dari Gemini ke HTML bersih menggunakan Marked.js
                 const markdownText = result.candidates[0].content.parts[0].text;
                 aiResponseDiv.innerHTML = marked.parse(markdownText);
             } else {
-                // Jika masih ada kendala pada akun, browser akan menampilkan pesan detail aslinya dari Google
-                aiResponseDiv.innerHTML = `<span class='text-danger'>Gagal memuat rekomendasi (${response.status}). <br>Pesan Google: ${result.error.message}</span>`;
+                aiResponseDiv.innerHTML = `<span class='text-danger'>Gagal membuat rekomendasi (${response.status}). <br>Pesan Google: ${result.error.message}</span>`;
             }
 
         } catch (error) {

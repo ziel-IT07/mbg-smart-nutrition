@@ -26,11 +26,13 @@
             <form action="{{ route('siswa.store') }}" method="POST">
                 @csrf
 
+                <input type="hidden" name="school_id" value="1">
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">NISN</label>
                         <input type="text" name="nisn" class="form-control" placeholder="Masukkan NISN Siswa" required>
-                        <small class="text-muted">*Jika NISN sudah terdaftar, sistem otomatis menambah riwayat baru tanpa menduplikat nama.</small>
+                        <small class="text-muted">*Sistem akan mendaftarkan data siswa secara murni ke database MySQL 3308.</small>
                     </div>
 
                     <div class="col-md-6 mb-3">
@@ -40,22 +42,27 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="form-label">Kelas</label>
-                        <input type="text" name="kelas" class="form-control" placeholder="Contoh: 7-A atau 1" required>
+                        <input type="text" name="kelas" class="form-control" placeholder="Contoh: 1-A" required>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Umur (Tahun)</label>
-                        <input type="number" name="umur" class="form-control" placeholder="Contoh: 12" required>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Tanggal Lahir</label>
+                        <input type="date" name="birth_date" class="form-control" required>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Umur (Bulan)</label>
+                        <input type="number" name="umur_bulan" class="form-control" placeholder="Contoh: 54" required>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
                         <label class="form-label">Jenis Kelamin</label>
                         <select name="jenis_kelamin" class="form-select" required>
                             <option value="">-- Pilih Jenis Kelamin --</option>
-                            <option value="Laki-laki">Laki-laki</option>
-                            <option value="Perempuan">Perempuan</option>
+                            <option value="L">Laki-laki</option>
+                            <option value="P">Perempuan</option>
                         </select>
                     </div>
                 </div>
@@ -63,12 +70,12 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Tinggi Badan (cm)</label>
-                        <input type="number" step="0.01" name="tinggi" class="form-control" placeholder="Contoh: 155.5" required>
+                        <input type="number" step="0.01" name="tinggi" class="form-control" placeholder="Contoh: 102.0" required>
                     </div>
 
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Berat Badan (kg)</label>
-                        <input type="number" step="0.01" name="berat" class="form-control" placeholder="Contoh: 45.2" required>
+                        <input type="number" step="0.01" name="berat" class="form-control" placeholder="Contoh: 16.5" required>
                     </div>
                 </div>
 
@@ -89,29 +96,27 @@
                         <th>Kelas</th>
                         <th>BMI Terkini</th>
                         <th>Status Gizi (BMI)</th>
-                        <th>Indikator TB/U (Stunting)</th> <th>Aksi</th>
+                        <th>Indikator TB/U (Stunting)</th> 
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($siswas as $siswa)
                         @php
-                            $terbaru = $siswa->riwayatGizi->first();
+                            // Perbaikan pemanggilan nama relasi baru
+                            $terbaru = $siswa->riwayatAntropometri->first();
                         @endphp
                     <tr>
                         <td>{{ $siswa->nisn }}</td>
-                        <td>{{ $siswa->nama }}</td>
-                        <td>{{ $siswa->kelas }}</td>
-                        <td>{{ $terbaru ? $terbaru->bmi : '-' }}</td>
+                        <td>{{ $siswa->name }}</td> <td>{{ $siswa->class_name }}</td> <td>{{ $terbaru ? $terbaru->bmi_value : '-' }}</td>
                         <td>
                             @if($terbaru)
-                                @if($terbaru->status_gizi == 'Kurus')
-                                    <span class="badge bg-warning text-dark">Kurus</span>
-                                @elseif($terbaru->status_gizi == 'Normal')
-                                    <span class="badge bg-success">Normal</span>
-                                @elseif($terbaru->status_gizi == 'Gemuk')
-                                    <span class="badge bg-info text-dark">Gemuk</span>
+                                @if(str_contains($terbaru->gizi_status_conclusion, 'Kurang'))
+                                    <span class="badge bg-warning text-dark">{{ $terbaru->gizi_status_conclusion }}</span>
+                                @elseif(str_contains($terbaru->gizi_status_conclusion, 'Normal'))
+                                    <span class="badge bg-success">{{ $terbaru->gizi_status_conclusion }}</span>
                                 @else
-                                    <span class="badge bg-danger">Obesitas</span>
+                                    <span class="badge bg-danger">{{ $terbaru->gizi_status_conclusion }}</span>
                                 @endif
                             @else
                                 <span class="badge bg-secondary">Belum ada data</span>
@@ -120,10 +125,10 @@
                         
                         <td>
                             @if($terbaru)
-                                @if($terbaru->status_tbu == 'Stunted' || $terbaru->status_tbu == 'Severely Stunted')
-                                    <span class="badge bg-danger">⚠️ Terindikasi Stunting</span>
+                                @if($terbaru->stunting_status_conclusion == 'Stunted' || $terbaru->stunting_status_conclusion == 'Severely Stunted' || $terbaru->stunting_status_conclusion == 'Pendek')
+                                    <span class="badge bg-danger">⚠️ {{ $terbaru->stunting_status_conclusion }}</span>
                                 @else
-                                    <span class="badge bg-success">✅ Normal</span>
+                                    <span class="badge bg-success">✅ {{ $terbaru->stunting_status_conclusion }}</span>
                                 @endif
                             @else
                                 <span class="badge bg-secondary">-</span>
