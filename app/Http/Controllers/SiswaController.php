@@ -30,11 +30,13 @@ class SiswaController extends Controller
             'nama'          => 'required|string|max:255',
             'kelas'         => 'required|string',
             'jenis_kelamin' => 'required|in:L,P', // Menggunakan inisial 'L' atau 'P' sesuai database
-            'birth_date'    => 'required|date',
-            'umur_bulan'    => 'required|integer|min:0', // Standar WHO menggunakan hitungan bulan
+            'birth_date'    => 'required|date|before_or_equal:today',
             'tinggi'        => 'required|numeric|min:0',
             'berat'         => 'required|numeric|min:0',
         ]);
+
+        // 1b. Hitung umur (bulan) otomatis dari Tanggal Lahir, standar WHO tetap pakai satuan bulan
+        $umurBulan = \Carbon\Carbon::parse($validated['birth_date'])->diffInMonths(now());
 
         // 2. Hitung BMI secara otomatis
         $tinggiMeter = $validated['tinggi'] / 100;
@@ -63,7 +65,7 @@ class SiswaController extends Controller
         // 5. Masukkan data pemeriksaan ke tabel riwayat_antropometris yang baru
         $siswa->riwayatAntropometri()->create([
             'measurement_date'           => now()->toDateString(),
-            'age_in_months'              => $validated['umur_bulan'],
+            'age_in_months'              => $umurBulan,
             'weight_kg'                  => $validated['berat'],
             'height_cm'                  => $validated['tinggi'],
             'bmi_value'                  => $bmi,
@@ -148,11 +150,13 @@ class SiswaController extends Controller
             'name'          => 'required|string|max:255',
             'class_name'    => 'required|string',
             'jenis_kelamin' => 'required|in:L,P',
-            'birth_date'    => 'required|date',
-            'age_in_months' => 'required|integer|min:0',
+            'birth_date'    => 'required|date|before_or_equal:today',
             'tinggi_cm'     => 'required|numeric|min:0',
             'weight_kg'     => 'required|numeric|min:0',
         ]);
+
+        // 1b. Hitung umur (bulan) otomatis dari Tanggal Lahir
+        $umurBulan = \Carbon\Carbon::parse($validated['birth_date'])->diffInMonths(now());
 
         // 2. Hitung BMI otomatis
         $tinggiMeter = $validated['tinggi_cm'] / 100;
@@ -178,7 +182,7 @@ class SiswaController extends Controller
 
         $riwayat = $siswa->riwayatAntropometri()->create([
             'measurement_date'           => now()->toDateString(),
-            'age_in_months'              => $validated['age_in_months'],
+            'age_in_months'              => $umurBulan,
             'weight_kg'                  => $validated['weight_kg'],
             'height_cm'                  => $validated['tinggi_cm'],
             'bmi_value'                  => $bmi,
